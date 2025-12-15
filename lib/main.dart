@@ -25,7 +25,7 @@ class ScamGuardApp extends StatelessWidget {
   const ScamGuardApp({super.key});
   
   // TODO: Replace with your actual Gemini API Key
-  static const String apiKey = "YOUR_API_KEY_HERE"; 
+  static const String apiKey = "AIzaSyBX0vqUBT1gQeEWq6hFhAMtGkVC1akirlY"; 
 
   static const String systemMatch = """
     **ROLE & PERSONA**
