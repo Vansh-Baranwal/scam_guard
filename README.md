@@ -1,9 +1,3 @@
-Here is the **"Turing Test & Humanization"** section for your README.
-
-This is the most important part for the judges. It explains **why** your AI works so well. It argues that to trick a human, an AI shouldn't be "smart"—it needs to be "flawed."
-
-***
-
 ## 🧠 The Imitation Game: How We Pass the Turing Test
 
 The classic Turing Test asks: *"Can a machine fool a human into thinking it is also human?"*
@@ -36,4 +30,4 @@ A chatbot answers questions. A *human* tells stories.
 
 ---
 
-> **"We didn't just build an AI that chats. We built an AI that 'acts'."**
+ **"We didn't just build an AI that chats. We built an AI that 'acts'."**
