@@ -1,10 +1,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'gemini_service.dart';
+import 'groq_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  final GeminiService geminiService;
+  final GroqService geminiService; // Retaining variable name for minimal diff, but type is GroqService
 
   const ChatScreen({super.key, required this.geminiService});
 

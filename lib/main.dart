@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_screen.dart';
-import 'gemini_service.dart';
+import 'chat_screen.dart';
+import 'groq_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // import 'firebase_options.dart'; // Uncomment if you have configured firebase
@@ -74,7 +75,7 @@ class ScamGuardApp extends StatelessWidget {
       ),
       home: ChatScreen(
         // Pass the secure key from the imported file
-        geminiService: GeminiService(dotenv.env['GEMINI_API_KEY']!, systemMatch),
+        geminiService: GroqService(dotenv.env['GROQ_API_KEY']!, systemMatch),
       ),
     );
   }
