@@ -55,7 +55,15 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          // Add error as a visible message for debugging
+          _messages.add({
+            'text': "DEBUG ERROR: ${e.toString()}",
+            'isUser': false,
+            'time': DateTime.now(),
+          });
         });
+        _scrollToBottom();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
