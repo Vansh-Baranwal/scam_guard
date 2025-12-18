@@ -3,7 +3,20 @@ import urllib.request
 import json
 import urllib.error
 
-API_KEY = "AIzaSyBX0vqUBT1gQeEWq6hFhAMtGkVC1akirlY"
+import os
+
+def get_api_key():
+    try:
+        with open('.env') as f:
+            for line in f:
+                if line.startswith('GEMINI_API_KEY='):
+                    return line.strip().split('=')[1]
+    except FileNotFoundError:
+        print("Error: .env file not found")
+        return None
+    return None
+
+API_KEY = get_api_key()
 # Testing the requested model
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 

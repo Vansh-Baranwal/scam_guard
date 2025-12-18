@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_screen.dart';
 import 'gemini_service.dart';
-import 'api_key.dart'; // <--- NEW IMPORT for the secret key
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // import 'firebase_options.dart'; // Uncomment if you have configured firebase
 
@@ -11,6 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
+    await dotenv.load(fileName: ".env");
     // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await Firebase.initializeApp(); 
   } catch (e) {
@@ -73,7 +74,7 @@ class ScamGuardApp extends StatelessWidget {
       ),
       home: ChatScreen(
         // Pass the secure key from the imported file
-        geminiService: GeminiService(GEMINI_API_KEY, systemMatch),
+        geminiService: GeminiService(dotenv.env['GEMINI_API_KEY']!, systemMatch),
       ),
     );
   }
