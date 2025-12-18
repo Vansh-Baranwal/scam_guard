@@ -18,7 +18,7 @@ def get_api_key():
 
 API_KEY = get_api_key()
 # Testing the requested model
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={API_KEY}"
 
 data = {
     "contents": [{"parts": [{"text": "Hello"}]}]

@@ -17,7 +17,7 @@ class GeminiService {
 
   GeminiService(String apiKey, String systemInstruction)
       : _model = GenerativeModel(
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash-exp',
           apiKey: apiKey,
           systemInstruction: Content.system(systemInstruction),
         );
