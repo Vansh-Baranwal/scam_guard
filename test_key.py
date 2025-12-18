@@ -4,8 +4,8 @@ import json
 import urllib.error
 
 API_KEY = "AIzaSyBX0vqUBT1gQeEWq6hFhAMtGkVC1akirlY"
-# Note: Using the model name we found: gemini-2.0-flash-exp
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={API_KEY}"
+# Testing the requested model
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 data = {
     "contents": [{"parts": [{"text": "Hello"}]}]

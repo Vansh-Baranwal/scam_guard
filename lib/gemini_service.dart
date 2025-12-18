@@ -17,7 +17,7 @@ class GeminiService {
 
   GeminiService(String apiKey, String systemInstruction)
       : _model = GenerativeModel(
-          model: 'gemini-2.0-flash-exp',
+          model: 'gemini-1.5-flash',
           apiKey: apiKey,
           systemInstruction: Content.system(systemInstruction),
         );
@@ -27,7 +27,7 @@ class GeminiService {
     final randomDelay = 3000 + Random().nextInt(2000);
     await Future.delayed(Duration(milliseconds: randomDelay));
 
-    try {
+    // try { removed
       // 2. Scam Analysis (Phase 1)
       if (!_isScamMode) {
         final lowerMsg = message.toLowerCase();
@@ -76,7 +76,7 @@ class GeminiService {
           throw Exception('Gemini Error: $e');
         }
       }
-    }
+    // } removed
   }
 
   bool get isScamMode => _isScamMode;
