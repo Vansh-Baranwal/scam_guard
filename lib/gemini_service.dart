@@ -51,17 +51,31 @@ class GeminiService {
       final content = Content.text(message);
       _history.add(content);
 
-      final response = await _model.generateContent(_history);
-      
-      final replyText = response.text ?? "...";
-      _history.add(Content.model([TextPart(replyText)]));
-      
-      return replyText;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Gemini Error: $e');
+      int retryCount = 0;
+      while (true) {
+        try {
+          final response = await _model.generateContent(_history);
+          final replyText = response.text ?? "...";
+          _history.add(Content.model([TextPart(replyText)]));
+          return replyText;
+        } catch (e) {
+          // Check for rate limit/quota errors (usually contain 429 or quota)
+          if (e.toString().toLowerCase().contains('429') || 
+              e.toString().toLowerCase().contains('quota') ||
+              e.toString().toLowerCase().contains('resource exhausted')) {
+            retryCount++;
+            if (retryCount >= 3) {
+              if (kDebugMode) print('Gemini Error (Max Retries): $e');
+              throw Exception('Server busy (Rate Limit). Please try again in a moment. ($e)');
+            }
+            if (kDebugMode) print('Quota limit hit, retrying ($retryCount)...');
+            await Future.delayed(Duration(seconds: 2 * retryCount)); // 2s, 4s, 6s...
+            continue;
+          }
+          if (kDebugMode) print('Gemini Error: $e');
+          throw Exception('Gemini Error: $e');
+        }
       }
-      throw Exception('Failed to generate response');
     }
   }
 
