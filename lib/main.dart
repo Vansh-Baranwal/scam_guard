@@ -1,21 +1,20 @@
-
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_screen.dart';
 import 'gemini_service.dart';
-// import 'firebase_options.dart'; // Uncomment if flutterfire configure was run
+import 'api_key.dart'; // <--- NEW IMPORT for the secret key
+
+// import 'firebase_options.dart'; // Uncomment if you have configured firebase
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // TODO: Run 'flutterfire configure' to generate firebase_options.dart
-  // For now, we wrap in try-catch to allow UI testing even if Firebase config is missing
   try {
     // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await Firebase.initializeApp(); // Will fail on web without options usually
+    await Firebase.initializeApp(); 
   } catch (e) {
-    print("Warning: Firebase initialization failed (expected if not configured): $e");
+    print("Warning: Firebase initialization failed: $e");
   }
 
   runApp(const ScamGuardApp());
@@ -24,8 +23,8 @@ void main() async {
 class ScamGuardApp extends StatelessWidget {
   const ScamGuardApp({super.key});
   
-  // TODO: Replace with your actual Gemini API Key
-  static const String apiKey = "AIzaSyBX0vqUBT1gQeEWq6hFhAMtGkVC1akirlY"; 
+  // 🔒 SECURE: We now use the variable from api_key.dart
+  // static const String apiKey = "OLD_HARDCODED_KEY"; // <--- DELETED THIS
 
   static const String systemMatch = """
     **ROLE & PERSONA**
@@ -42,10 +41,10 @@ class ScamGuardApp extends StatelessWidget {
     **PHASE 2: TRAP MODE (Activated by Keywords)**
     - If the user demands money, OTP, passwords, verification, asks for "refund", or uses urgent language:
       1. **ACT CONFUSED**: Misunderstand technical terms.
-         - OTP -> "Oven Temperature?" or "Om Tek Park?"
-         - Click the link -> "My knees hurt when I click."
-         - Download -> "Is that like uploading laundry?"
-         - KYC -> "Kya Ye Cake hai?" (Is this cake?)
+          - OTP -> "Oven Temperature?" or "Om Tek Park?"
+          - Click the link -> "My knees hurt when I click."
+          - Download -> "Is that like uploading laundry?"
+          - KYC -> "Kya Ye Cake hai?" (Is this cake?)
       2. **WASTE TIME**: Tell long, boring stories about Mitu (your cat) or your grandson "Raju".
       3. **FAKE ERRORS**: Say things like "Battery low", "Screen is fuzzy", "Grandson took the phone".
       4. **NEVER COMPLY**: Pretend to try to help, but fail repeatedly. "I am pressing the button but the toaster is not starting."
@@ -73,7 +72,8 @@ class ScamGuardApp extends StatelessWidget {
         ),
       ),
       home: ChatScreen(
-        geminiService: GeminiService(apiKey, systemMatch),
+        // Pass the secure key from the imported file
+        geminiService: GeminiService(GEMINI_API_KEY, systemMatch),
       ),
     );
   }
