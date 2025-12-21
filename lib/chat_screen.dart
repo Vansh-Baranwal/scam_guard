@@ -42,14 +42,26 @@ class _ChatScreenState extends State<ChatScreen> {
       final response = await widget.geminiService.sendMessage(text);
       if (mounted) {
         setState(() {
-          _messages.add({
-            'text': response,
-            'isUser': false,
-            'time': DateTime.now(),
-          });
           _isLoading = false;
         });
-        _scrollToBottom();
+        
+        // Split by "|||" and add messages one by one
+        final parts = response.split('|||');
+        for (final part in parts) {
+          if (part.trim().isNotEmpty) {
+             await Future.delayed(Duration(milliseconds: 1500 + part.length * 30)); // Typing simulation
+             if (mounted) {
+               setState(() {
+                 _messages.add({
+                   'text': part.trim(),
+                   'isUser': false,
+                   'time': DateTime.now(),
+                 });
+               });
+               _scrollToBottom();
+             }
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
