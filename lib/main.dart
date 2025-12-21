@@ -6,7 +6,7 @@ import 'chat_screen.dart';
 import 'groq_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// import 'firebase_options.dart'; // Uncomment if you have configured firebase
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +14,9 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
     // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await Firebase.initializeApp(); 
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     print("Warning: Firebase initialization failed: $e");
   }
