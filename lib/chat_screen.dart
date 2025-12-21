@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'groq_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatScreen extends StatefulWidget {
   final GroqService geminiService; // Retaining variable name for minimal diff, but type is GroqService
@@ -17,6 +18,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<Map<String, dynamic>> _messages = []; // {text, isUser, time}
   bool _isLoading = false;
   final ScrollController _scrollController = ScrollController();
+  final String _sessionId = DateTime.now().millisecondsSinceEpoch.toString(); // Unique session ID
 
   @override
   void initState() {
@@ -37,6 +39,21 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _controller.clear();
     _scrollToBottom();
+
+    // Persist User Message
+    try {
+      FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_sessionId)
+          .collection('messages')
+          .add({
+        'text': text,
+        'sender': 'user',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Firestore Error (User): $e");
+    }
 
     try {
       final response = await widget.geminiService.sendMessage(text);
@@ -59,6 +76,21 @@ class _ChatScreenState extends State<ChatScreen> {
                  });
                });
                _scrollToBottom();
+               
+               // Persist Bot Message
+                try {
+                  FirebaseFirestore.instance
+                      .collection('chats')
+                      .doc(_sessionId)
+                      .collection('messages')
+                      .add({
+                    'text': part.trim(),
+                    'sender': 'bot',
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+                } catch (e) {
+                  debugPrint("Firestore Error (Bot): $e");
+                }
              }
           }
         }
