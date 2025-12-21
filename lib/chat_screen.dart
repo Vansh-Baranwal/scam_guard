@@ -49,7 +49,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final parts = response.split('|||');
         for (final part in parts) {
           if (part.trim().isNotEmpty) {
-             await Future.delayed(Duration(milliseconds: 1500 + part.length * 30)); // Typing simulation
+             await Future.delayed(Duration(milliseconds: 2000 + part.length * 100)); // Slow typing simulation
              if (mounted) {
                setState(() {
                  _messages.add({
