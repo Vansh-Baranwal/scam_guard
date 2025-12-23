@@ -18,7 +18,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<Map<String, dynamic>> _messages = []; // {text, isUser, time}
   bool _isLoading = false;
   final ScrollController _scrollController = ScrollController();
-  final String _sessionId = DateTime.now().millisecondsSinceEpoch.toString(); // Unique session ID
+  String _sessionId = DateTime.now().millisecondsSinceEpoch.toString(); // Unique session ID
 
   @override
   void initState() {
@@ -118,6 +118,35 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _clearChat() async {
+    // 1. Clear UI
+    setState(() {
+      _messages.clear();
+    });
+
+    // 2. Delete from Firestore
+    try {
+      final collection = FirebaseFirestore.instance
+          .collection('chats')
+          .doc(_sessionId)
+          .collection('messages');
+      
+      final snapshots = await collection.get();
+      for (final doc in snapshots.docs) {
+        await doc.reference.delete();
+      }
+      // Delete session doc
+      await FirebaseFirestore.instance.collection('chats').doc(_sessionId).delete();
+    } catch (e) {
+      debugPrint("Error deleting chat: $e");
+    }
+
+    // 3. Reset Session
+    setState(() {
+      _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    });
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -169,6 +198,11 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: const Color(0xFF075E54),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _clearChat,
+            tooltip: 'Clear Chat',
+          ),
           IconButton(icon: const Icon(Icons.videocam), onPressed: () {}),
           IconButton(icon: const Icon(Icons.call), onPressed: () {}),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
