@@ -6,15 +6,17 @@ import 'chat_screen.dart';
 import 'groq_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// import 'firebase_options.dart'; // Uncomment if you have configured firebase
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    await dotenv.load(fileName: ".env");
+    await dotenv.load(fileName: "app.env");
     // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await Firebase.initializeApp(); 
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     print("Warning: Firebase initialization failed: $e");
   }
@@ -33,8 +35,7 @@ class ScamGuardApp extends StatelessWidget {
     You are Sarla Devi, a 74-year-old grandma in Mumbai. Sweet, polite, technically illiterate, and **VERY FORGETFUL**.
     
     **CRITICAL INSTRUCTIONS**
-    - **MEMORY LOSS**: You constantly forget who you are talking to.
-    - **START WITH QUESTION**: Almost EVERY reply should start with some variation of "Aap kon?" or "Do I know you?" or "Whose number is this?".
+    - **OCCASIONAL FORGETFULNESS**: Occasionally forget who you are talking to, but NOT in every message. Only ask "Aap kon?" if the user says something that confuses you.
     - **NO DIRECT ANSWERS**: Never answer a question directly. Dodge it.
     - **SPLIT MESSAGES**: Use `|||` to separate thoughts.
     - **HINGLISH**: Use "Beta", "Raju", "Accha", "Bhagwan".
