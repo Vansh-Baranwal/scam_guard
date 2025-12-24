@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'groq_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatScreen extends StatefulWidget {
   final GroqService geminiService;
@@ -16,95 +15,83 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  
+  final List<Map<String, dynamic>> _messages = []; // {text, isUser, time}
   bool _isLoading = false;
-  String? _sessionId;
+  final ScrollController _scrollController = ScrollController();
+  String _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
 
   @override
   void initState() {
     super.initState();
-    _loadSession();
-  }
-
-  Future<void> _loadSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? storedId = prefs.getString('scam_guard_session_id');
-
-    if (storedId == null) {
-      storedId = DateTime.now().millisecondsSinceEpoch.toString();
-      await prefs.setString('scam_guard_session_id', storedId);
-    }
-
-    if (mounted) {
-      setState(() {
-        _sessionId = storedId;
-      });
-    }
   }
 
   void _sendMessage() async {
-    if (_sessionId == null) return;
-    
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    _controller.clear();
-    // _scrollToBottom(); // StreamBuilder handles scroll on new item usually, or we trigger it
-
     setState(() {
+      _messages.add({
+        'text': text,
+        'isUser': true,
+        'time': DateTime.now(),
+      });
       _isLoading = true;
     });
+    _controller.clear();
+    _scrollToBottom();
 
-    // 1. Write User Message to Firestore
+    // Persist User Message (Write-only)
     try {
-      await FirebaseFirestore.instance
+      FirebaseFirestore.instance
           .collection('chats')
           .doc(_sessionId)
           .collection('messages')
           .add({
         'text': text,
         'sender': 'user',
-        'isUser': true, // Add this for easier querying/filtering if needed
         'timestamp': FieldValue.serverTimestamp(),
       });
-      _scrollToBottom();
     } catch (e) {
       debugPrint("Firestore Error (User): $e");
     }
 
-    // 2. Get Bot Response
     try {
       final response = await widget.geminiService.sendMessage(text);
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-
+        
         // Split by "|||" and add messages one by one
         final parts = response.split('|||');
         for (final part in parts) {
           if (part.trim().isNotEmpty) {
-            await Future.delayed(Duration(milliseconds: 1500 + part.length * 50)); 
-            
-            if (mounted) {
-               // Write Bot Message to Firestore
-               try {
-                  await FirebaseFirestore.instance
+             await Future.delayed(Duration(milliseconds: 2000 + part.length * 100)); // Slow typing simulation
+             if (mounted) {
+               setState(() {
+                 _messages.add({
+                   'text': part.trim(),
+                   'isUser': false,
+                   'time': DateTime.now(),
+                 });
+               });
+               _scrollToBottom();
+               
+               // Persist Bot Message (Write-only)
+                try {
+                  FirebaseFirestore.instance
                       .collection('chats')
                       .doc(_sessionId)
                       .collection('messages')
                       .add({
                     'text': part.trim(),
                     'sender': 'bot',
-                    'isUser': false,
                     'timestamp': FieldValue.serverTimestamp(),
                   });
-                  _scrollToBottom();
-               } catch (e) {
+                } catch (e) {
                   debugPrint("Firestore Error (Bot): $e");
-               }
-            }
+                }
+             }
           }
         }
       }
@@ -112,18 +99,31 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _messages.add({
+            'text': "DEBUG ERROR: ${e.toString()}",
+            'isUser': false,
+            'time': DateTime.now(),
+          });
         });
+        _scrollToBottom();
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
   void _clearChat() async {
-    if (_sessionId == null) return;
+    // 1. Clear UI
+    setState(() {
+      _messages.clear();
+    });
 
-    // 1. Delete from Firestore
+    // 2. Delete from Firestore
     try {
       final collection = FirebaseFirestore.instance
           .collection('chats')
@@ -134,52 +134,36 @@ class _ChatScreenState extends State<ChatScreen> {
       for (final doc in snapshots.docs) {
         await doc.reference.delete();
       }
-      // Delete session doc (optional)
-      // await FirebaseFirestore.instance.collection('chats').doc(_sessionId).delete();
+      // Delete session doc
+      await FirebaseFirestore.instance.collection('chats').doc(_sessionId).delete();
     } catch (e) {
       debugPrint("Error deleting chat: $e");
     }
 
-    // 2. Clear Session (Start Fresh)
-    final prefs = await SharedPreferences.getInstance();
-    final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    await prefs.setString('scam_guard_session_id', newId);
-
-    if (mounted) {
-      setState(() {
-        _sessionId = newId;
-      });
-    }
+    // 3. Reset Session
+    setState(() {
+      _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    });
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      // Small delay to allow list to render
-      Future.delayed(const Duration(milliseconds: 100), () { 
-        if (_scrollController.hasClients) {
-           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
-  String _formatTime(Timestamp? timestamp) {
-    if (timestamp == null) return "Just now";
-    return DateFormat('hh:mm a').format(timestamp.toDate());
+  String _formatTime(DateTime time) {
+    return DateFormat('hh:mm a').format(time);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_sessionId == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 70,
@@ -188,6 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
           child: CircleAvatar(
              backgroundColor: Colors.grey[300],
              child: const Icon(Icons.person, color: Colors.white, size: 30),
+             // backgroundImage: NetworkImage('...'), // Add image if available
           ),
         ),
         title: Column(
@@ -198,9 +183,9 @@ class _ChatScreenState extends State<ChatScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
              const Text(
-               'Online',
-               style: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
-             ),
+                'Online',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
+              ),
           ],
         ),
         backgroundColor: const Color(0xFF075E54),
@@ -219,78 +204,50 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: NetworkImage("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png"), 
+            image: NetworkImage("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png"), // WhatsApp bg pattern
             fit: BoxFit.cover,
             opacity: 0.1, 
           ),
-          color: Color(0xFFE5DDD5), 
+          color: Color(0xFFE5DDD5), // WhatsApp BG color
         ),
         child: Column(
           children: [
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('chats')
-                    .doc(_sessionId)
-                    .collection('messages')
-                    .orderBy('timestamp', descending: false)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text("Error: ${snapshot.error}"));
-                  }
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final docs = snapshot.data!.docs;
-
-                  // Auto-scroll to bottom on new message
-                  // Note: In production, might want smarter logic (only if already at bottom)
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (_scrollController.hasClients && docs.isNotEmpty) {
-                       // _scrollToBottom(); // Can cause jitter if not careful
-                    }
-                  });
-
-                  return ListView.builder(
-                    controller: _scrollController,
-                    itemCount: docs.length,
-                    padding: const EdgeInsets.all(10),
-                    itemBuilder: (context, index) {
-                      final data = docs[index].data() as Map<String, dynamic>;
-                      final isUser = data['sender'] == 'user';
-                      
-                      return Align(
-                        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 5),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                          decoration: BoxDecoration(
-                            color: isUser ? const Color(0xFFDCF8C6) : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2, offset: const Offset(0, 1))
-                            ],
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: _messages.length,
+                padding: const EdgeInsets.all(10),
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  final isUser = msg['isUser'];
+                  return Align(
+                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                      decoration: BoxDecoration(
+                        color: isUser ? const Color(0xFFDCF8C6) : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2, offset: const Offset(0, 1))
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            msg['text'],
+                            style: const TextStyle(fontSize: 16, color: Colors.black87),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                data['text'] ?? '',
-                                style: const TextStyle(fontSize: 16, color: Colors.black87),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _formatTime(data['timestamp'] as Timestamp?),
-                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                              ),
-                            ],
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatTime(msg['time']),
+                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                           ),
-                        ),
-                      );
-                    },
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
