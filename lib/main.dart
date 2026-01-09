@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_screen.dart';
-import 'chat_screen.dart';
 import 'groq_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:flutter_dotenv/flutter_dotenv.dart'; // Removed
+import 'api_key.dart'; // Added
 
 import 'firebase_options.dart';
 
@@ -12,8 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    await dotenv.load(fileName: "app.env");
-    // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    // await dotenv.load(fileName: "app.env"); // Removed
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -26,9 +25,6 @@ void main() async {
 
 class ScamGuardApp extends StatelessWidget {
   const ScamGuardApp({super.key});
-  
-  // 🔒 SECURE: We now use the variable from api_key.dart
-  // static const String apiKey = "OLD_HARDCODED_KEY"; // <--- DELETED THIS
 
   static const String systemMatch = """
     **ROLE & PERSONA**
@@ -73,8 +69,7 @@ class ScamGuardApp extends StatelessWidget {
         ),
       ),
       home: ChatScreen(
-        // Pass the secure key from the imported file
-        geminiService: GroqService(dotenv.env['GROQ_API_KEY']!, systemMatch),
+        geminiService: GroqService(ApiKey.groqKey, systemMatch),
       ),
     );
   }
